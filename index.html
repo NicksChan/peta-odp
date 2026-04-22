@@ -3,116 +3,378 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Peta ODP Satelit</title>
+    <title>Peta ODP - Kamera & Navigasi</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
     
     <style>
-        body { padding: 0; margin: 0; }
-        #map { height: 100vh; width: 100vw; }
+        body { padding: 0; margin: 0; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; background: #e5e3df; }
+        #map { height: 100vh; width: 100vw; z-index: 1; }
         
-        /* Tombol kustom untuk mengulang pencarian GPS */
-        .tombol-gps {
-            position: absolute; top: 10px; right: 10px; z-index: 999;
-            background: white; padding: 10px; border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-weight: bold; cursor: pointer; border: 2px solid #007bff;
+        /* Tombol Atas */
+        .header-tools {
+            position: absolute; top: 15px; left: 15px; right: 15px; z-index: 999;
+            display: flex; gap: 10px;
         }
+        .btn {
+            padding: 12px 15px; border-radius: 25px; border: none; font-weight: bold; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); cursor: pointer; font-size: 14px;
+            color: white; flex: 1; text-align: center;
+        }
+        .btn-terdekat { background: #ea4335; }
+        .btn-tambah { background: #fbbc05; color: #333; }
+
+        .btn-lokasi {
+            position: absolute; bottom: 30px; right: 15px; z-index: 999;
+            background: white; width: 50px; height: 50px; border-radius: 50%;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3); border: none; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; font-size: 24px;
+        }
+
+        /* Panel Bawah (Rute) */
+        #panel-bawah {
+            position: absolute; bottom: -200px; left: 0; width: 100%; z-index: 1000;
+            background: white; border-top-left-radius: 20px; border-top-right-radius: 20px;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.2); padding: 25px 20px; box-sizing: border-box;
+            transition: bottom 0.4s ease-in-out;
+        }
+        .waktu-jarak { font-size: 20px; font-weight: 800; color: #34a853; margin-bottom: 5px; }
+        .detail-teks { font-size: 14px; color: #5f6368; margin-bottom: 20px; font-weight: 500; }
+        
+        .btn-mulai {
+            background: #4285F4; color: white; border: none; border-radius: 10px;
+            padding: 15px 0; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(66, 133, 244, 0.3); display: flex; justify-content: center; align-items: center;
+        }
+
+        .btn-tutup {
+            position: absolute; top: 15px; right: 15px; z-index: 1001;
+            background: white; color: #333; border: none; border-radius: 50%;
+            width: 40px; height: 40px; font-weight: bold; font-size: 16px; cursor: pointer; 
+            display: none; box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        }
+
+        /* Modal Tambah ODP */
+        #overlay-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 1999;
+        }
+        #modal-tambah {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 20px; border-radius: 15px; z-index: 2000;
+            width: 85%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-height: 90vh; overflow-y: auto;
+        }
+        #modal-tambah h3 { margin-top: 0; color: #333; text-align: center; }
+        .form-input { width: 100%; margin-bottom: 12px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; font-family: inherit; }
+        .modal-btns { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-simpan { background: #34a853; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-batal { background: #ea4335; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        
+        /* Area Preview Foto */
+        #preview-foto { display: none; width: 100%; max-height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; border: 1px solid #ddd; }
+        .file-upload-label { display: block; background: #e8f0fe; color: #1a73e8; text-align: center; padding: 10px; border-radius: 8px; font-weight: bold; margin-bottom: 12px; cursor: pointer; border: 1px dashed #1a73e8; }
+        #input-foto { display: none; }
+
+        /* Icon Titik Biru User */
+        .titik-biru {
+            background-color: #4285F4; width: 18px; height: 18px;
+            border-radius: 50%; border: 3px solid white;
+            box-shadow: 0 0 0 rgba(66, 133, 244, 0.4); animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7); }
+            70% { box-shadow: 0 0 0 25px rgba(66, 133, 244, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0); }
+        }
+
+        .leaflet-routing-container { display: none !important; }
+        
+        /* Memperbaiki tampilan popup agar foto muat dengan rapi */
+        .leaflet-popup-content { width: 220px !important; }
     </style>
 </head>
 <body>
 
-    <button class="tombol-gps" onclick="cariLokasi()">📍 Lacak Posisi Saya</button>
+    <div class="header-tools">
+        <button class="btn btn-terdekat" onclick="cariRuteTerdekat()">🔍 Terdekat</button>
+        <button class="btn btn-tambah" id="btn-tambah" onclick="toggleModeTambah()">➕ Tambah ODP</button>
+    </div>
+    
+    <button class="btn-tutup" id="btn-tutup" onclick="tutupTarget()">X</button>
+    <button class="btn-lokasi" onclick="fokusLokasiSaya()">📍</button>
+
+    <div id="panel-bawah">
+        <div class="waktu-jarak">Jarak Lurus: <span id="info-jarak">-- m</span></div>
+        <div class="detail-teks">Menuju: <b id="nama-odp-tujuan" style="color: #333;">...</b></div>
+        <button class="btn-mulai" onclick="bukaGoogleMapsAsli()">🗺️ Pandu Pakai Aplikasi Maps HP</button>
+    </div>
+
+    <div id="overlay-modal"></div>
+    <div id="modal-tambah">
+        <h3>Tambah ODP Baru</h3>
+        
+        <label class="file-upload-label" for="input-foto">📷 Ambil Foto ODP</label>
+        <input type="file" id="input-foto" accept="image/*" capture="environment">
+        <img id="preview-foto" src="" alt="Preview">
+
+        <input type="text" id="input-nama" class="form-input" placeholder="Contoh: ODP A1.5">
+        <input type="text" id="input-alamat" class="form-input" placeholder="Alamat / Patokan">
+        <textarea id="input-keterangan" class="form-input" placeholder="Keterangan fisik/kondisi" rows="3"></textarea>
+        
+        <div class="modal-btns">
+            <button class="btn-batal" onclick="tutupModal()">Batal</button>
+            <button class="btn-simpan" onclick="simpanODP()">Simpan</button>
+        </div>
+    </div>
+    
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
     <script>
-        // 1. INISIALISASI PETA (Set awal di sekitar Natar)
-        var map = L.map('map').setView([-5.3188, 105.1974], 15);
+        var map = L.map('map', {zoomControl: false}).setView([-5.3188, 105.1974], 15);
 
-        // 2. LOAD PETA SATELIT (Hybrid - Satelit + Nama Jalan) - 100% GRATIS
         L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            attribution: '© Google Maps'
+            maxZoom: 20, attribution: '© Google Maps'
         }).addTo(map);
 
-        // 3. TAMBAHKAN TITIK ODP (Ganti koordinat ini sesuai titik asli)
-        var dataODP = [
-            { nama: "ODP A1.1 (Jl. Sitara)", lat: -5.3188, lng: 105.1974 },
-            { nama: "ODP C1.2 (Jl. Padat Karya)", lat: -5.3150, lng: 105.1950 },
-            { nama: "ODP F2.1 (Bharata Music)", lat: -5.3210, lng: 105.2010 }
+        // DATABASE ODP
+        var defaultODP = [
+            { nama: "ODP A1.1", alamat: "Jl. Sitara", keterangan: "Tiang utama", lat: -5.3188, lng: 105.1974, foto: "" }
         ];
 
-        // Looping untuk memunculkan marker ODP
-        var odpMarkers = [];
-        dataODP.forEach(function(odp) {
-            var marker = L.marker([odp.lat, odp.lng]).addTo(map)
-                .bindPopup("<b>" + odp.nama + "</b><br><button style='margin-top:5px; padding:5px; background:#007bff; color:white; border:none; border-radius:3px;' onclick='buatRute(" + odp.lat + ", " + odp.lng + ")'>Arahkan ke Sini</button>");
-            odpMarkers.push(marker);
-        });
+        var dataODP = JSON.parse(localStorage.getItem('databaseODP'));
+        if (!dataODP) {
+            dataODP = defaultODP;
+            localStorage.setItem('databaseODP', JSON.stringify(dataODP));
+        }
 
-        // 4. SISTEM GPS REAL-TIME
+        var markerLayer = L.layerGroup().addTo(map);
+
+        // Render Marker ODP di Peta
+        function renderMarkers() {
+            markerLayer.clearLayers();
+            dataODP.forEach(function(odp) {
+                var infoAlamat = odp.alamat ? `<div style="font-size:12px; color:#555; margin-top:3px;">📍 ${odp.alamat}</div>` : '';
+                var infoKet = odp.keterangan ? `<div style="font-size:12px; color:#777; margin-top:3px;">📝 ${odp.keterangan}</div>` : '';
+                
+                // Jika ada foto, tampilkan di popup
+                var infoFoto = odp.foto ? `<img src="${odp.foto}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; margin-top:8px; border:1px solid #ccc;">` : '';
+                
+                var kontenPopup = `
+                    <div style='text-align:center;'>
+                        <b style='font-size:15px; color:#333;'>${odp.nama}</b>
+                        ${infoFoto}
+                        ${infoAlamat}
+                        ${infoKet}
+                        <button style='margin-top:10px; width:100%; padding:10px 0; background:#1a73e8; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;' 
+                        onclick='kunciTarget(${odp.lat}, ${odp.lng}, "${odp.nama}")'>Pandu ke Sini</button>
+                    </div>`;
+                
+                L.marker([odp.lat, odp.lng]).bindPopup(kontenPopup).addTo(markerLayer);
+            });
+        }
+        renderMarkers(); 
+
+        // === FITUR LOKASI PENGGUNA ===
         var lokasiSaya = null;
         var markerSaya = null;
-        var kontrolRute = null;
+        var targetAktif = null;
+        var routingControl = null; 
 
-        // Fungsi mencari lokasi (Bisa dipanggil ulang pakai tombol)
-        window.cariLokasi = function() {
-            map.locate({setView: true, maxZoom: 17, watch: true, enableHighAccuracy: true});
-        };
+        map.locate({setView: false, maxZoom: 18, watch: true, enableHighAccuracy: true});
 
-        // Otomatis cari lokasi saat web dibuka
-        cariLokasi();
-
-        // Jika GPS Berhasil Ditemukan
         map.on('locationfound', function(e) {
             lokasiSaya = e.latlng;
-            
-            // Ikon kustom untuk posisi teknisi (lingkaran biru)
-            var myIcon = L.divIcon({
-                className: 'my-div-icon',
-                html: '<div style="background-color: blue; width: 15px; height: 15px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>',
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
-            });
+            var iconBiru = L.divIcon({ className: 'my-div-icon', html: '<div class="titik-biru"></div>', iconSize: [24, 24], iconAnchor: [12, 12] });
 
             if (!markerSaya) {
-                markerSaya = L.marker(lokasiSaya, {icon: myIcon}).addTo(map).bindPopup("Posisi Anda").openPopup();
+                markerSaya = L.marker(lokasiSaya, {icon: iconBiru, zIndexOffset: 1000}).addTo(map);
+                map.flyTo(lokasiSaya, 16); 
             } else {
                 markerSaya.setLatLng(lokasiSaya);
             }
         });
 
-        // Jika GPS Gagal Ditemukan
-        map.on('locationerror', function(e) {
-            alert("Pencarian lokasi gagal.\n\n1. Pastikan fitur GPS/Lokasi di HP Anda MENYALA.\n2. Pastikan Anda mengizinkan (Allow) browser untuk mengakses lokasi.\n3. Jangan gunakan Laptop/PC, gunakan HP untuk hasil akurat.");
+        window.fokusLokasiSaya = function() {
+            if (lokasiSaya) map.flyTo(lokasiSaya, 18, {animate: true});
+        };
+
+        // === FITUR KOMPRESI & UPLOAD FOTO ===
+        var fotoBase64Temp = "";
+        document.getElementById('input-foto').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+
+            var reader = new FileReader();
+            reader.onload = function(event) {
+                var img = new Image();
+                img.onload = function() {
+                    // Buat Canvas untuk kompresi (Mengecilkan ukuran gambar agar tidak memenuhi LocalStorage)
+                    var canvas = document.createElement('canvas');
+                    var ctx = canvas.getContext('2d');
+                    
+                    var MAX_WIDTH = 400; // Lebar maksimal gambar di database
+                    var scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    
+                    // Gambar ulang versi kecil ke canvas
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    // Ubah jadi Base64 string kualitas 70%
+                    fotoBase64Temp = canvas.toDataURL('image/jpeg', 0.7); 
+                    
+                    // Tampilkan preview di form
+                    var preview = document.getElementById('preview-foto');
+                    preview.src = fotoBase64Temp;
+                    preview.style.display = 'block';
+                    document.querySelector('.file-upload-label').innerText = '✅ Foto Berhasil Ditambahkan';
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
         });
 
-        // 5. FUNGSI UNTUK MEMBUAT RUTE
-        window.buatRute = function(tujuanLat, tujuanLng) {
-            if (!lokasiSaya) {
-                alert("Sistem belum mendeteksi lokasi Anda. Pastikan GPS menyala dan klik 'Izinkan' pada browser, lalu klik tombol 'Lacak Posisi Saya' di pojok kanan atas.");
-                return;
-            }
+        // === FITUR TAMBAH ODP ===
+        var modeTambah = false;
+        var lokasiTemp = null;
 
-            if (kontrolRute) {
-                map.removeControl(kontrolRute);
+        window.toggleModeTambah = function() {
+            modeTambah = !modeTambah;
+            var btn = document.getElementById('btn-tambah');
+            if (modeTambah) {
+                btn.style.background = '#34a853';
+                btn.style.color = 'white';
+                btn.innerText = '👉 Klik Lokasi di Peta';
+                document.getElementById('map').style.cursor = 'crosshair';
+            } else {
+                btn.style.background = '#fbbc05';
+                btn.style.color = '#333';
+                btn.innerText = '➕ Tambah ODP';
+                document.getElementById('map').style.cursor = '';
             }
+        };
 
-            kontrolRute = L.Routing.control({
-                waypoints: [
-                    L.latLng(lokasiSaya.lat, lokasiSaya.lng),
-                    L.latLng(tujuanLat, tujuanLng)
-                ],
+        map.on('click', function(e) {
+            if (modeTambah) {
+                lokasiTemp = e.latlng;
+                document.getElementById('overlay-modal').style.display = 'block';
+                document.getElementById('modal-tambah').style.display = 'block';
+            }
+        });
+
+        window.tutupModal = function() {
+            document.getElementById('overlay-modal').style.display = 'none';
+            document.getElementById('modal-tambah').style.display = 'none';
+            
+            // Reset Form
+            document.getElementById('input-nama').value = '';
+            document.getElementById('input-alamat').value = '';
+            document.getElementById('input-keterangan').value = '';
+            document.getElementById('input-foto').value = '';
+            document.getElementById('preview-foto').style.display = 'none';
+            document.querySelector('.file-upload-label').innerText = '📷 Ambil Foto ODP';
+            fotoBase64Temp = ""; // Hapus cache foto
+            
+            toggleModeTambah(); 
+        };
+
+        window.simpanODP = function() {
+            var nama = document.getElementById('input-nama').value;
+            var alamat = document.getElementById('input-alamat').value;
+            var keterangan = document.getElementById('input-keterangan').value;
+
+            if (!nama) { alert("Nama ODP wajib diisi!"); return; }
+
+            var odpBaru = {
+                nama: nama,
+                alamat: alamat,
+                keterangan: keterangan,
+                lat: lokasiTemp.lat,
+                lng: lokasiTemp.lng,
+                foto: fotoBase64Temp // Simpan foto hasil kompresi
+            };
+
+            // Proteksi Try-Catch jika storage penuh karena terlalu banyak foto
+            try {
+                dataODP.push(odpBaru);
+                localStorage.setItem('databaseODP', JSON.stringify(dataODP));
+                renderMarkers(); 
+                tutupModal();
+                alert("ODP & Foto Berhasil Ditambahkan!");
+            } catch (error) {
+                alert("Penyimpanan Browser Penuh! Hapus beberapa cache/history HP Anda.");
+                dataODP.pop(); // Batalkan penambahan terakhir
+            }
+        };
+
+        // === FITUR NAVIGASI (WEB & APP) ===
+        window.cariRuteTerdekat = function() {
+            if (!lokasiSaya) { alert("Tunggu sebentar, mencari GPS Anda..."); return; }
+
+            var jarakTerpendek = Infinity;
+            var odpTerdekat = null;
+
+            dataODP.forEach(function(odp) {
+                var jarak = lokasiSaya.distanceTo(L.latLng(odp.lat, odp.lng));
+                if (jarak < jarakTerpendek) {
+                    jarakTerpendek = jarak;
+                    odpTerdekat = odp;
+                }
+            });
+
+            if (odpTerdekat) {
+                map.closePopup();
+                kunciTarget(odpTerdekat.lat, odpTerdekat.lng, odpTerdekat.nama);
+            }
+        };
+
+        window.kunciTarget = function(tujuanLat, tujuanLng, namaTujuan) {
+            if (!lokasiSaya) { alert("GPS belum terkunci, pastikan lokasi HP aktif."); return; }
+            map.closePopup();
+
+            targetAktif = L.latLng(tujuanLat, tujuanLng);
+
+            if (routingControl) map.removeControl(routingControl);
+
+            var jarakMeter = Math.round(lokasiSaya.distanceTo(targetAktif));
+            var teksJarak = jarakMeter > 1000 ? (jarakMeter/1000).toFixed(2) + " km" : jarakMeter + " meter";
+            
+            document.getElementById('info-jarak').innerText = teksJarak;
+            document.getElementById('nama-odp-tujuan').innerText = namaTujuan;
+
+            routingControl = L.Routing.control({
+                waypoints: [ lokasiSaya, targetAktif ],
+                createMarker: function() { return null; }, 
                 routeWhileDragging: false,
                 addWaypoints: false,
-                language: 'id',
-                lineOptions: {
-                    styles: [{color: '#00BFFF', opacity: 0.8, weight: 6}] // Warna garis rute biru terang agar terlihat di peta satelit
-                }
+                fitSelectedRoutes: true,
+                show: false, 
+                lineOptions: { styles: [{color: '#4285F4', opacity: 0.8, weight: 6}] }
             }).addTo(map);
+            
+            document.getElementById('panel-bawah').style.bottom = '0px'; 
+            document.getElementById('btn-tutup').style.display = 'block'; 
+        };
+
+        window.tutupTarget = function() {
+            document.getElementById('panel-bawah').style.bottom = '-200px'; 
+            document.getElementById('btn-tutup').style.display = 'none'; 
+            
+            if (routingControl) map.removeControl(routingControl);
+            targetAktif = null;
+            map.flyTo(lokasiSaya, 16);
+        };
+
+        // BUKA GOOGLE MAPS APP
+        window.bukaGoogleMapsAsli = function() {
+            if (!targetAktif) return;
+            var urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${lokasiSaya.lat},${lokasiSaya.lng}&destination=${targetAktif.lat},${targetAktif.lng}&travelmode=driving`;
+            window.open(urlGoogleMaps, '_blank');
         };
     </script>
 </body>
