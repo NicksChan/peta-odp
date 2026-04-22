@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Peta ODP - Cloud Enterprise Edition</title>
+    <title>Peta ODP - Enterprise Edition</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
@@ -11,67 +11,104 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,600,1,0" rel="stylesheet" />
     
     <style>
-        /* === (CSS TETAP SAMA SEPERTI SEBELUMNYA) === */
         :root {
             --primary: #0A66C2; --primary-hover: #004182; --success: #0D9488;
-            --danger: #E11D48; --surface: #FFFFFF; --background: #F3F4F6;
-            --text-main: #0F172A; --text-muted: #64748B; --border: #E2E8F0;
+            --danger: #E11D48; --warning: #F59E0B; --surface: #FFFFFF; 
+            --background: #F3F4F6; --text-main: #0F172A; --text-muted: #64748B; --border: #E2E8F0;
         }
         body { padding: 0; margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: var(--background); color: var(--text-main); }
         #map { height: 100vh; width: 100vw; z-index: 1; }
         
-        h3 { margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: var(--text-main); }
-        p { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
-
-        .top-nav { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 8px; width: 90%; max-width: 400px; background: var(--surface); padding: 8px; border-radius: 100px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
-        .btn-nav { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 16px; border-radius: 100px; border: none; font-weight: 600; font-size: 14px; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.2s ease; }
+        h3 { margin: 0 0 16px 0; font-size: 18px; font-weight: 700; text-align: center; }
+        
+        .top-nav { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 6px; width: 95%; max-width: 500px; background: var(--surface); padding: 8px; border-radius: 100px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); overflow-x: auto; scrollbar-width: none; }
+        .top-nav::-webkit-scrollbar { display: none; }
+        .btn-nav { flex: 1; min-width: 80px; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 10px 8px; border-radius: 100px; border: none; font-weight: 600; font-size: 13px; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
         .btn-terdekat { background: var(--surface); color: var(--text-main); }
-        .btn-tambah { background: var(--text-main); color: var(--surface); }
-        .btn-tambah.active { background: var(--success); }
+        .btn-tambah { background: var(--primary); color: var(--surface); }
+        .btn-ukur { background: var(--surface); color: var(--text-main); border: 1px solid var(--border); }
+        .btn-brosur { background: #8B5CF6; color: white; } 
+        .active-btn { background: var(--success) !important; color: white !important; }
 
         .fab { position: absolute; z-index: 999; display: flex; justify-content: center; align-items: center; background: var(--surface); width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer; color: var(--text-main); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); transition: transform 0.2s; }
         .fab:active { transform: scale(0.95); }
         .btn-lokasi { bottom: 40px; right: 20px; }
         .btn-tutup { top: 90px; right: 20px; display: none; }
 
+        #status-banner { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); z-index: 998; background: var(--text-main); color: white; padding: 10px 20px; border-radius: 20px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none; align-items: center; gap: 8px; white-space: nowrap; }
+
         #panel-bawah { position: absolute; bottom: -300px; left: 50%; transform: translateX(-50%); width: 100%; max-width: 500px; z-index: 1000; background: var(--surface); border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.15); padding: 32px 24px 40px 24px; box-sizing: border-box; transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .sheet-handle { width: 40px; height: 5px; background: #CBD5E1; border-radius: 10px; margin: -16px auto 20px auto; }
         .waktu-jarak { font-size: 28px; font-weight: 800; color: var(--primary); margin-bottom: 4px; letter-spacing: -0.5px; }
         .detail-teks { font-size: 15px; color: var(--text-muted); margin-bottom: 24px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
-        .btn-mulai { background: var(--primary); color: white; border: none; border-radius: 14px; padding: 16px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(10, 102, 194, 0.3); font-family: 'Inter', sans-serif; }
+        .btn-mulai { background: var(--primary); color: white; border: none; border-radius: 14px; padding: 16px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; font-family: 'Inter', sans-serif; }
 
-        #overlay-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1999; opacity: 0; transition: opacity 0.3s; }
-        #modal-tambah { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -40%); background: var(--surface); padding: 24px; border-radius: 20px; z-index: 2000; width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-height: 85vh; overflow-y: auto; opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        .form-group { margin-bottom: 16px; text-align: left; }
-        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
-        .form-input { width: 100%; padding: 14px 16px; box-sizing: border-box; border: 1.5px solid var(--border); border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 15px; background: #F8FAFC; }
+        /* OVERLAY MODAL UMUM */
+        #overlay-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 1999; opacity: 0; transition: opacity 0.3s; }
         
-        .modal-btns { display: flex; gap: 12px; margin-top: 24px; }
-        .btn-modal { flex: 1; padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; border: none; }
+        /* MODAL TAMBAH ODP */
+        #modal-tambah { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); padding: 24px; border-radius: 20px; z-index: 2000; width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto; opacity: 0; transition: all 0.3s ease; box-sizing: border-box; }
+        
+        /* MODAL GALERI BROSUR (Diperbaiki) */
+        #modal-galeri { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); padding: 20px; border-radius: 20px; z-index: 2001; width: 92%; max-width: 500px; height: 85vh; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); overflow-y: auto; opacity: 0; transition: all 0.3s ease; box-sizing: border-box; }
+        
+        /* MODAL LIGHTBOX (Zoom Gambar) */
+        #modal-lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.3s;}
+        #modal-lightbox img { max-width: 95%; max-height: 80vh; object-fit: contain; border-radius: 8px;}
+        .btn-tutup-lightbox { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer; display: flex;}
+
+        .form-group { margin-bottom: 12px; text-align: left; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        .form-input { width: 100%; padding: 12px 14px; box-sizing: border-box; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 14px; background: #F8FAFC; }
+        .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-modal { flex: 1; padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; border: none; }
         .btn-batal { background: var(--background); color: var(--text-main); }
         .btn-simpan { background: var(--primary); color: white; }
 
-        .file-upload-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #F0F9FF; border: 2px dashed #BAE6FD; color: var(--primary); padding: 20px; border-radius: 12px; font-weight: 600; cursor: pointer; margin-bottom: 16px; }
-        #input-foto { display: none; }
-        #preview-foto { display: none; width: 100%; height: 160px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border); }
+        .file-upload-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: #F0F9FF; border: 2px dashed #BAE6FD; color: var(--primary); padding: 15px; border-radius: 12px; font-weight: 600; cursor: pointer; margin-bottom: 15px; text-align: center;}
+        #input-foto, #input-brosur { display: none; }
+        #preview-foto { display: none; width: 100%; height: 150px; object-fit: cover; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); }
 
+        /* UI GALERI BARU */
+        .header-galeri { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .btn-tutup-galeri { background: #F1F5F9; border: none; padding: 6px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;}
+        
+        .upload-brosur-area { background: #F3E8FF; border: 2px dashed #D8B4FE; color: #7E22CE; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; margin-bottom: 20px; font-weight: 600; display: block; transition: 0.2s;}
+        .upload-brosur-area:active { background: #E9D5FF; }
+        
+        /* Grid yang diperbaiki: Pasti 2 kolom rata */
+        .grid-brosur { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .kartu-brosur { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); position: relative; background: #f8fafc; cursor: pointer;}
+        .kartu-brosur img { width: 100%; height: 130px; object-fit: cover; display: block;}
+        .kartu-brosur .info { padding: 6px; font-size: 11px; color: var(--text-muted); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500;}
+        .kartu-brosur .btn-hapus-brosur { position: absolute; top: 5px; right: 5px; background: rgba(225, 29, 72, 0.9); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;}
+        
+        /* Map UI */
         .titik-biru { background-color: var(--primary); width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(10, 102, 194, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(10, 102, 194, 0); } 100% { box-shadow: 0 0 0 0 rgba(10, 102, 194, 0); } }
 
         .leaflet-routing-container { display: none !important; }
         .leaflet-popup-content-wrapper { border-radius: 16px !important; }
-        .leaflet-popup-content { width: 240px !important; font-family: 'Inter', sans-serif; }
+        .leaflet-popup-content { width: 250px !important; font-family: 'Inter', sans-serif; }
         .popup-title { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
         .popup-img { width: 100%; height: 130px; object-fit: cover; border-radius: 10px; margin: 8px 0; border: 1px solid var(--border); }
-        .popup-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; margin-top: 12px; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .action-grid { display: flex; gap: 6px; margin-top: 12px; }
+        .btn-action { padding: 8px; border-radius: 10px; font-weight: 600; color: white; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .btn-pandu { background: var(--primary); flex: 2; }
+        .btn-pindah { background: var(--warning); flex: 1; }
+        .btn-hapus { background: var(--danger); flex: 1; }
     </style>
 </head>
 <body>
 
     <div class="top-nav">
-        <button class="btn-nav btn-terdekat" onclick="cariRuteTerdekat()"><span class="material-symbols-rounded">radar</span> Terdekat</button>
-        <button class="btn-nav btn-tambah" id="btn-tambah" onclick="toggleModeTambah()"><span class="material-symbols-rounded">add_location_alt</span> Tambah ODP</button>
+        <button class="btn-nav btn-terdekat" onclick="cariRuteTerdekat()"><span class="material-symbols-rounded" style="font-size:18px;">radar</span> Dekat</button>
+        <button class="btn-nav btn-tambah" id="btn-tambah" onclick="toggleModeTambah()"><span class="material-symbols-rounded" style="font-size:18px;">add_location_alt</span> ODP</button>
+        <button class="btn-nav btn-ukur" id="btn-ukur" onclick="toggleModeUkur()"><span class="material-symbols-rounded" style="font-size:18px;">straighten</span> Ukur</button>
+        <button class="btn-nav btn-brosur" onclick="bukaGaleri()"><span class="material-symbols-rounded" style="font-size:18px;">folder_special</span> Brosur</button>
     </div>
+    
+    <div id="status-banner"><span class="material-symbols-rounded" id="status-icon">info</span><span id="status-text">Info...</span><button onclick="batalkanAksi()" style="margin-left:10px; background:white; color:black; border:none; border-radius:15px; padding:4px 10px; font-weight:bold; cursor:pointer;">Batal</button></div>
     
     <button class="fab btn-tutup" id="btn-tutup" onclick="tutupTarget()"><span class="material-symbols-rounded">close</span></button>
     <button class="fab btn-lokasi" onclick="fokusLokasiSaya()"><span class="material-symbols-rounded">my_location</span></button>
@@ -80,26 +117,46 @@
         <div class="sheet-handle"></div>
         <div class="waktu-jarak" id="info-jarak">-- m</div>
         <div class="detail-teks"><span class="material-symbols-rounded" style="font-size: 18px;">route</span> Menuju: <b id="nama-odp-tujuan" style="color: var(--text-main);">...</b></div>
-        <button class="btn-mulai" onclick="bukaGoogleMapsAsli()"><span class="material-symbols-rounded">navigation</span> Pandu dengan Maps</button>
+        <button class="btn-mulai" onclick="bukaGoogleMapsAsli()"><span class="material-symbols-rounded">navigation</span> Pandu Maps</button>
     </div>
 
-    <div id="overlay-modal"></div>
+    <div id="overlay-modal" onclick="tutupSemuaModal()"></div>
+    
     <div id="modal-tambah">
-        <h3>Input Data ODP Baru</h3>
+        <h3>Input Data ODP</h3>
         <label class="file-upload-box" for="input-foto" id="label-foto">
-            <span class="material-symbols-rounded" style="font-size: 32px;">add_a_photo</span><span>Ketuk untuk Ambil Foto</span>
+            <span class="material-symbols-rounded" style="font-size: 28px;">add_a_photo</span><span style="font-size:12px">Foto ODP (Otomatis)</span>
         </label>
         <input type="file" id="input-foto" accept="image/*" capture="environment">
-        <img id="preview-foto" src="" alt="Preview">
-
-        <div class="form-group"><label class="form-label">Nama / Kode ODP</label><input type="text" id="input-nama" class="form-input" placeholder="Misal: ODP-A1.5"></div>
-        <div class="form-group"><label class="form-label">Alamat / Patokan</label><input type="text" id="input-alamat" class="form-input" placeholder="Misal: Depan toko kelontong"></div>
-        <div class="form-group"><label class="form-label">Keterangan Fisik</label><textarea id="input-keterangan" class="form-input" placeholder="Misal: Tiang beton..." rows="2"></textarea></div>
-        
+        <img id="preview-foto" src="">
+        <div class="form-group"><input type="text" id="input-nama" class="form-input" placeholder="Nama ODP (Misal: ODP-A1.5)"></div>
+        <div class="form-group"><input type="text" id="input-alamat" class="form-input" placeholder="Patokan Alamat"></div>
+        <div class="form-group"><textarea id="input-keterangan" class="form-input" placeholder="Keterangan fisik..." rows="2"></textarea></div>
         <div class="modal-btns">
-            <button class="btn-modal btn-batal" onclick="tutupModal()">Batal</button>
-            <button class="btn-modal btn-simpan" id="btn-simpan-db" onclick="simpanKeCloud()">Simpan ke Cloud</button>
+            <button class="btn-modal btn-batal" onclick="tutupSemuaModal()">Batal</button>
+            <button class="btn-modal btn-simpan" id="btn-simpan-db" onclick="simpanKeCloud()">Simpan</button>
         </div>
+    </div>
+
+    <div id="modal-galeri">
+        <div class="header-galeri">
+            <h3 style="margin:0;">Folder Brosur</h3>
+            <button class="btn-tutup-galeri" onclick="tutupSemuaModal()"><span class="material-symbols-rounded">close</span></button>
+        </div>
+        
+        <label class="upload-brosur-area" for="input-brosur" id="label-upload-brosur">
+            <span class="material-symbols-rounded" style="font-size: 32px; display:block; margin-bottom:5px;">add_photo_alternate</span>
+            Ketuk untuk Upload Brosur
+        </label>
+        <input type="file" id="input-brosur" accept="image/*">
+
+        <div class="grid-brosur" id="grid-brosur"></div>
+    </div>
+
+    <div id="modal-lightbox">
+        <button class="btn-tutup-lightbox" onclick="tutupLightbox()"><span class="material-symbols-rounded">close</span></button>
+        <img id="lightbox-img" src="">
+        <div id="lightbox-nama" style="color:white; margin-top:15px; font-weight:bold; font-family:sans-serif;"></div>
     </div>
     
     <div id="map"></div>
@@ -109,13 +166,12 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         // ==========================================
-        // GANTI BAGIAN INI DENGAN CONFIG DARI FIREBASE ANDA
+        // MASUKKAN KEMBALI CONFIG ANDA DI SINI
         // ==========================================
-       // Your web app's Firebase configuration
-const firebaseConfig = {
+        const firebaseConfig = {
   apiKey: "AIzaSyAkmOAmQY1XVTF_dVGVwE7zU3Rp5rlPqV8",
   authDomain: "peta-odp-natar.firebaseapp.com",
   databaseURL: "https://peta-odp-natar-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -129,210 +185,120 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Setup Peta Dasar
         var map = L.map('map', {zoomControl: false, attributionControl: false}).setView([-5.3188, 105.1974], 15);
         L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
         var markerLayer = L.layerGroup().addTo(map);
-        
-        window.dataODPGlobal = []; // Menyimpan data untuk fitur "Cari Terdekat"
+        window.dataODPGlobal = []; 
 
-        // === FITUR REAL-TIME SINKRONISASI (MAGIC!) ===
-        // Kode ini akan memantau database. Jika ada teknisi lain nambah ODP, peta Anda otomatis terupdate!
         onSnapshot(collection(db, "data_odp"), (snapshot) => {
             markerLayer.clearLayers();
             window.dataODPGlobal = [];
-
-            snapshot.forEach((doc) => {
-                let odp = doc.data();
-                window.dataODPGlobal.push(odp); // Simpan ke array global
-
-                var infoAlamat = odp.alamat ? `<p style="margin-top:4px; font-size:13px;">📍 ${odp.alamat}</p>` : '';
-                var infoKet = odp.keterangan ? `<p style="margin-top:2px; font-size:12px; color:var(--text-muted);">📝 ${odp.keterangan}</p>` : '';
-                var infoFoto = odp.foto ? `<img src="${odp.foto}" class="popup-img">` : '';
-                
-                var kontenPopup = `
-                    <div>
-                        <div class="popup-title">${odp.nama}</div>
-                        ${infoFoto} ${infoAlamat} ${infoKet}
-                        <button class="popup-btn" onclick='kunciTarget(${odp.lat}, ${odp.lng}, "${odp.nama}")'>
-                            <span class="material-symbols-rounded" style="font-size: 18px;">directions</span> Pandu
-                        </button>
-                    </div>`;
+            snapshot.forEach((dokument) => {
+                let odp = dokument.data(); odp.id = dokument.id; window.dataODPGlobal.push(odp); 
+                var kontenPopup = `<div><div class="popup-title">${odp.nama}</div>${odp.foto ? `<img src="${odp.foto}" class="popup-img">` : ''} ${odp.alamat ? `<p style="font-size:13px; margin:5px 0;">📍 ${odp.alamat}</p>` : ''} ${odp.keterangan ? `<p style="font-size:12px; margin:0; color:var(--text-muted);">📝 ${odp.keterangan}</p>` : ''} <div class="action-grid"><button class="btn-action btn-pandu" onclick='kunciTarget(${odp.lat}, ${odp.lng}, "${odp.nama}")'><span class="material-symbols-rounded" style="font-size:18px;">directions</span></button><button class="btn-action btn-pindah" onclick='mulaiPindahODP("${odp.id}", "${odp.nama}")'><span class="material-symbols-rounded" style="font-size:18px;">drag_pan</span></button><button class="btn-action btn-hapus" onclick='hapusODP("${odp.id}")'><span class="material-symbols-rounded" style="font-size:18px;">delete</span></button></div></div>`;
                 L.marker([odp.lat, odp.lng]).bindPopup(kontenPopup).addTo(markerLayer);
             });
         });
 
-        // === FUNGSI SIMPAN KE CLOUD ===
-        window.simpanKeCloud = async function() {
-            var nama = document.getElementById('input-nama').value;
-            var alamat = document.getElementById('input-alamat').value;
-            var keterangan = document.getElementById('input-keterangan').value;
-            var btnSimpan = document.getElementById('btn-simpan-db');
-
-            if (!nama) { alert("Nama ODP wajib diisi!"); return; }
-
-            btnSimpan.innerText = "Menyimpan...";
-            btnSimpan.style.opacity = "0.7";
-
-            try {
-                // Menambahkan data ke Firestore Collection "data_odp"
-                await addDoc(collection(db, "data_odp"), {
-                    nama: nama,
-                    alamat: alamat,
-                    keterangan: keterangan,
-                    lat: window.lokasiTemp.lat,
-                    lng: window.lokasiTemp.lng,
-                    foto: window.fotoBase64Temp || "",
-                    timestamp: new Date()
-                });
-                
-                alert("Berhasil! Data ODP kini tersimpan di Cloud dan terlihat di perangkat lain.");
-                tutupModal();
-            } catch (error) {
-                console.error("Error saving doc: ", error);
-                alert("Gagal menyimpan ke Cloud. Pastikan Config Firebase Anda sudah benar!");
-            } finally {
-                btnSimpan.innerText = "Simpan ODP";
-                btnSimpan.style.opacity = "1";
-            }
-        };
-
         // ==========================================
-        // FUNGSI UMUM LAINNYA (Navigasi, UI, Kamera)
+        // PERBAIKAN SISTEM BROSUR & KOMPRESI
         // ==========================================
-        window.lokasiSaya = null;
-        var markerSaya = null;
-        var targetAktif = null;
-        var routingControl = null; 
-
-        map.locate({setView: false, maxZoom: 18, watch: true, enableHighAccuracy: true});
-        map.on('locationfound', function(e) {
-            window.lokasiSaya = e.latlng;
-            var iconBiru = L.divIcon({ className: 'my-div-icon', html: '<div class="titik-biru"></div>', iconSize: [20, 20], iconAnchor: [10, 10] });
-            if (!markerSaya) {
-                markerSaya = L.marker(window.lokasiSaya, {icon: iconBiru, zIndexOffset: 1000}).addTo(map);
-                map.flyTo(window.lokasiSaya, 16); 
-            } else { markerSaya.setLatLng(window.lokasiSaya); }
+        onSnapshot(collection(db, "data_brosur"), (snapshot) => {
+            const grid = document.getElementById('grid-brosur');
+            grid.innerHTML = ''; 
+            snapshot.forEach((dokument) => {
+                let brosur = dokument.data(); let docId = dokument.id;
+                let div = document.createElement('div'); div.className = 'kartu-brosur';
+                div.innerHTML = `
+                    <button class="btn-hapus-brosur" onclick="hapusBrosur(event, '${docId}')"><span class="material-symbols-rounded" style="font-size:16px;">close</span></button>
+                    <img src="${brosur.foto}" onclick="bukaLightbox('${brosur.foto}', '${brosur.namaFile}')">
+                    <div class="info">${brosur.namaFile}</div>
+                `;
+                grid.appendChild(div);
+            });
         });
 
-        window.fokusLokasiSaya = function() { if (window.lokasiSaya) map.flyTo(window.lokasiSaya, 18, {animate: true}); };
-
-        // Fitur Kamera & Kompresi Ekstrem (Firestore batas 1MB per dokumen)
-        window.fotoBase64Temp = "";
-        document.getElementById('input-foto').addEventListener('change', function(e) {
-            var file = e.target.files[0];
-            if (!file) return;
+        document.getElementById('input-brosur').addEventListener('change', function(e) {
+            var file = e.target.files[0]; if (!file) return; 
+            var lbl = document.getElementById('label-upload-brosur');
+            lbl.innerHTML = `<span class="material-symbols-rounded" style="font-size: 32px; display:block; margin-bottom:5px;">hourglass_empty</span>Sedang Memproses...`;
+            
             var reader = new FileReader();
-            reader.onload = function(event) {
-                var img = new Image();
-                img.onload = function() {
-                    var canvas = document.createElement('canvas');
-                    var ctx = canvas.getContext('2d');
-                    var MAX_WIDTH = 300; // Dikompres lebih kecil agar aman masuk Cloud DB
-                    var scaleSize = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * scaleSize;
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            reader.onload = function(evt) { 
+                var img = new Image(); 
+                img.onload = function() { 
+                    var canvas = document.createElement('canvas'); 
+                    var ctx = canvas.getContext('2d'); 
                     
-                    window.fotoBase64Temp = canvas.toDataURL('image/jpeg', 0.5); // Kualitas 50%
+                    // KOMPRESI EKSTREM (Mencegah Limit 1MB Firebase)
+                    var MAX_WIDTH = 500; // Lebar gambar dibuat max 500px agar aman
+                    var scaleSize = MAX_WIDTH / img.width; 
+                    if (img.width > MAX_WIDTH) {
+                        canvas.width = MAX_WIDTH; 
+                        canvas.height = img.height * scaleSize; 
+                    } else {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                    }
                     
-                    document.getElementById('preview-foto').src = window.fotoBase64Temp;
-                    document.getElementById('preview-foto').style.display = 'block';
-                    document.getElementById('label-foto').style.display = 'none';
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
+                    var base64Brosur = canvas.toDataURL('image/jpeg', 0.5); // Kualitas 50%
+
+                    // Cek Ukuran Data
+                    if(base64Brosur.length > 900000) {
+                        alert("Gagal: Foto masih terlalu berat! Coba cari foto yang lebih sederhana.");
+                        lbl.innerHTML = `<span class="material-symbols-rounded" style="font-size: 32px; display:block; margin-bottom:5px;">add_photo_alternate</span>Ketuk untuk Upload Brosur`;
+                        return;
+                    }
+
+                    addDoc(collection(db, "data_brosur"), { foto: base64Brosur, namaFile: file.name, timestamp: new Date() }).then(() => {
+                        document.getElementById('input-brosur').value = '';
+                        lbl.innerHTML = `<span class="material-symbols-rounded" style="font-size: 32px; display:block; margin-bottom:5px;">add_photo_alternate</span>Upload Berhasil! Ketuk Lagi`;
+                        setTimeout(() => { lbl.innerHTML = `<span class="material-symbols-rounded" style="font-size: 32px; display:block; margin-bottom:5px;">add_photo_alternate</span>Ketuk untuk Upload Brosur`; }, 3000);
+                    }).catch((error) => { alert("Error Database: " + error.message); });
                 }
-                img.src = event.target.result;
+                img.src = evt.target.result; 
             }
             reader.readAsDataURL(file);
         });
 
-        var modeTambah = false;
-        window.toggleModeTambah = function() {
-            modeTambah = !modeTambah;
-            var btn = document.getElementById('btn-tambah');
-            if (modeTambah) {
-                btn.classList.add('active');
-                btn.innerHTML = '<span class="material-symbols-rounded">touch_app</span> Ketuk Peta';
-                document.getElementById('map').style.cursor = 'crosshair';
-            } else {
-                btn.classList.remove('active');
-                btn.innerHTML = '<span class="material-symbols-rounded">add_location_alt</span> Tambah ODP';
-                document.getElementById('map').style.cursor = '';
-            }
+        window.hapusBrosur = async function(event, docId) {
+            event.stopPropagation(); // Agar gambar tidak ikut ke-zoom saat pencet hapus
+            if(confirm("Hapus brosur ini secara permanen?")) { await deleteDoc(doc(db, "data_brosur", docId)); }
         };
 
-        map.on('click', function(e) {
-            if (modeTambah) {
-                window.lokasiTemp = e.latlng;
-                var overlay = document.getElementById('overlay-modal');
-                var modal = document.getElementById('modal-tambah');
-                overlay.style.display = 'block'; modal.style.display = 'block';
-                setTimeout(() => {
-                    overlay.style.opacity = '1'; modal.style.opacity = '1';
-                    modal.style.transform = 'translate(-50%, -50%)';
-                }, 10);
-            }
-        });
-
-        window.tutupModal = function() {
-            var overlay = document.getElementById('overlay-modal');
-            var modal = document.getElementById('modal-tambah');
-            overlay.style.opacity = '0'; modal.style.opacity = '0';
-            modal.style.transform = 'translate(-50%, -40%)';
-            setTimeout(() => {
-                overlay.style.display = 'none'; modal.style.display = 'none';
-                document.getElementById('input-nama').value = '';
-                document.getElementById('input-alamat').value = '';
-                document.getElementById('input-keterangan').value = '';
-                document.getElementById('input-foto').value = '';
-                document.getElementById('preview-foto').style.display = 'none';
-                document.getElementById('label-foto').style.display = 'flex';
-                window.fotoBase64Temp = ""; 
-                toggleModeTambah(); 
-            }, 300);
+        // --- SISTEM MODAL & LIGHTBOX ---
+        window.bukaLightbox = function(src, nama) {
+            document.getElementById('lightbox-img').src = src; document.getElementById('lightbox-nama').innerText = nama;
+            let lb = document.getElementById('modal-lightbox'); lb.style.display = 'flex'; setTimeout(() => { lb.style.opacity = '1'; }, 10);
+        };
+        window.tutupLightbox = function() {
+            let lb = document.getElementById('modal-lightbox'); lb.style.opacity = '0'; setTimeout(() => { lb.style.display = 'none'; }, 300);
+        };
+        
+        window.bukaGaleri = function() { document.getElementById('overlay-modal').style.display = 'block'; document.getElementById('modal-galeri').style.display = 'block'; setTimeout(() => { document.getElementById('overlay-modal').style.opacity = '1'; document.getElementById('modal-galeri').style.opacity = '1'; }, 10); };
+        
+        window.tutupSemuaModal = function() {
+            document.getElementById('overlay-modal').style.opacity = '0'; document.getElementById('modal-tambah').style.opacity = '0'; document.getElementById('modal-galeri').style.opacity = '0';
+            setTimeout(() => { document.getElementById('overlay-modal').style.display = 'none'; document.getElementById('modal-tambah').style.display = 'none'; document.getElementById('modal-galeri').style.display = 'none'; document.getElementById('input-nama').value = ''; document.getElementById('input-alamat').value = ''; document.getElementById('input-keterangan').value = ''; document.getElementById('input-foto').value = ''; document.getElementById('preview-foto').style.display = 'none'; window.fotoBase64Temp = ""; batalkanAksi(); }, 300);
         };
 
-        window.cariRuteTerdekat = function() {
-            if (!window.lokasiSaya) { alert("Mencari GPS..."); return; }
-            var jarakTerpendek = Infinity; var odpTerdekat = null;
-            window.dataODPGlobal.forEach(function(odp) {
-                var jarak = window.lokasiSaya.distanceTo(L.latLng(odp.lat, odp.lng));
-                if (jarak < jarakTerpendek) { jarakTerpendek = jarak; odpTerdekat = odp; }
-            });
-            if (odpTerdekat) { map.closePopup(); kunciTarget(odpTerdekat.lat, odpTerdekat.lng, odpTerdekat.nama); }
-        };
+        // --- FUNGSI ODP LAINNYA ---
+        window.simpanKeCloud = async function() { var nama = document.getElementById('input-nama').value; var alamat = document.getElementById('input-alamat').value; var keterangan = document.getElementById('input-keterangan').value; var btnSimpan = document.getElementById('btn-simpan-db'); if (!nama) { alert("Nama wajib diisi!"); return; } btnSimpan.innerText = "Menyimpan..."; btnSimpan.style.opacity = "0.7"; try { await addDoc(collection(db, "data_odp"), { nama: nama, alamat: alamat, keterangan: keterangan, lat: window.lokasiTemp.lat, lng: window.lokasiTemp.lng, foto: window.fotoBase64Temp || "" }); tutupSemuaModal(); } catch (e) { alert("Gagal!"); } finally { btnSimpan.innerText = "Simpan"; btnSimpan.style.opacity = "1"; } };
+        window.hapusODP = async function(docId) { if(confirm("Hapus ODP permanen?")) { await deleteDoc(doc(db, "data_odp", docId)); } };
+        window.modePindah = false; window.idOdpPindah = null; window.mulaiPindahODP = function(docId, namaOdp) { map.closePopup(); window.modePindah = true; window.idOdpPindah = docId; document.getElementById('map').style.cursor = 'crosshair'; tampilBanner(`Pindah <b>${namaOdp}</b>`, 'touch_app'); }; window.prosesPindahODP = async function(latlng) { if(confirm("Pindahkan ke titik ini?")) { tampilBanner("Memindahkan...", "sync"); await updateDoc(doc(db, "data_odp", window.idOdpPindah), { lat: latlng.lat, lng: latlng.lng }); batalkanAksi(); } };
 
-        window.kunciTarget = function(tujuanLat, tujuanLng, namaTujuan) {
-            if (!window.lokasiSaya) { alert("GPS belum terkunci."); return; }
-            map.closePopup(); targetAktif = L.latLng(tujuanLat, tujuanLng);
-            if (routingControl) map.removeControl(routingControl);
+        window.modeTambah = false; window.modeUkur = false; var layerUkur = L.featureGroup().addTo(map); var titikUkurArr = []; var totalJarak = 0;
+        window.toggleModeTambah = function() { batalkanAksi(); window.modeTambah = true; document.getElementById('btn-tambah').classList.add('active-btn'); document.getElementById('map').style.cursor = 'crosshair'; tampilBanner("Ketuk lokasi ODP", "add_location_alt"); }; window.toggleModeUkur = function() { if(window.modeUkur) { batalkanAksi(); return; } batalkanAksi(); window.modeUkur = true; document.getElementById('btn-ukur').classList.add('active-btn'); document.getElementById('map').style.cursor = 'crosshair'; tampilBanner("Jarak: 0m", "straighten"); };
 
-            var jarakMeter = Math.round(window.lokasiSaya.distanceTo(targetAktif));
-            var teksJarak = jarakMeter > 1000 ? (jarakMeter/1000).toFixed(2) + " km" : jarakMeter + " meter";
-            document.getElementById('info-jarak').innerText = teksJarak;
-            document.getElementById('nama-odp-tujuan').innerText = namaTujuan;
+        map.on('click', function(e) { if (window.modeTambah) { window.lokasiTemp = e.latlng; document.getElementById('overlay-modal').style.display = 'block'; document.getElementById('modal-tambah').style.display = 'block'; setTimeout(() => { document.getElementById('overlay-modal').style.opacity = '1'; document.getElementById('modal-tambah').style.opacity = '1'; }, 10); } else if (window.modePindah) { prosesPindahODP(e.latlng); } else if (window.modeUkur) { titikUkurArr.push(e.latlng); L.circleMarker(e.latlng, {color: '#E11D48', radius: 5, fillOpacity: 1}).addTo(layerUkur); if(titikUkurArr.length > 1) { L.polyline(titikUkurArr, {color: '#0A66C2', weight: 4, dashArray: '8,8'}).addTo(layerUkur); let pSebelum = titikUkurArr[titikUkurArr.length - 2]; totalJarak += pSebelum.distanceTo(e.latlng); let teks = totalJarak > 1000 ? (totalJarak/1000).toFixed(2) + " km" : Math.round(totalJarak) + " m"; document.getElementById('status-text').innerHTML = `Total Jarak: <b>${teks}</b>`; } } });
 
-            routingControl = L.Routing.control({
-                waypoints: [ window.lokasiSaya, targetAktif ],
-                createMarker: function() { return null; }, routeWhileDragging: false, addWaypoints: false, fitSelectedRoutes: true, show: false, 
-                lineOptions: { styles: [{color: '#0A66C2', opacity: 0.9, weight: 6}] }
-            }).addTo(map);
-            
-            document.getElementById('panel-bawah').style.bottom = '0px'; 
-            document.getElementById('btn-tutup').style.display = 'flex'; 
-        };
+        window.tampilBanner = function(teks, icon) { document.getElementById('status-text').innerHTML = teks; document.getElementById('status-icon').innerText = icon; document.getElementById('status-banner').style.display = 'flex'; }; window.batalkanAksi = function() { window.modeTambah = false; window.modePindah = false; window.modeUkur = false; window.idOdpPindah = null; document.getElementById('map').style.cursor = ''; document.getElementById('status-banner').style.display = 'none'; document.getElementById('btn-tambah').classList.remove('active-btn'); document.getElementById('btn-ukur').classList.remove('active-btn'); layerUkur.clearLayers(); titikUkurArr = []; totalJarak = 0; };
+        
+        window.fotoBase64Temp = ""; document.getElementById('input-foto').addEventListener('change', function(e) { var file = e.target.files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function(evt) { var img = new Image(); img.onload = function() { var canvas = document.createElement('canvas'); var ctx = canvas.getContext('2d'); var MAX_WIDTH = 300; var scaleSize = MAX_WIDTH / img.width; canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); window.fotoBase64Temp = canvas.toDataURL('image/jpeg', 0.5); document.getElementById('preview-foto').src = window.fotoBase64Temp; document.getElementById('preview-foto').style.display = 'block'; }; img.src = evt.target.result; }; reader.readAsDataURL(file); });
 
-        window.tutupTarget = function() {
-            document.getElementById('panel-bawah').style.bottom = '-300px'; 
-            document.getElementById('btn-tutup').style.display = 'none'; 
-            if (routingControl) map.removeControl(routingControl);
-            targetAktif = null; map.flyTo(window.lokasiSaya, 16);
-        };
-
-        window.bukaGoogleMapsAsli = function() {
-            if (!targetAktif) return;
-            var urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${window.lokasiSaya.lat},${window.lokasiSaya.lng}&destination=${targetAktif.lat},${targetAktif.lng}&travelmode=driving`;
-            window.open(urlGoogleMaps, '_blank');
-        };
+        window.lokasiSaya = null; var markerSaya = null; var targetAktif = null; var routingControl = null; map.locate({setView: false, maxZoom: 18, watch: true, enableHighAccuracy: true}); map.on('locationfound', function(e) { window.lokasiSaya = e.latlng; var iconBiru = L.divIcon({ className: 'my-div-icon', html: '<div class="titik-biru"></div>', iconSize: [20, 20], iconAnchor: [10, 10] }); if (!markerSaya) { markerSaya = L.marker(window.lokasiSaya, {icon: iconBiru, zIndexOffset: 1000}).addTo(map); map.flyTo(window.lokasiSaya, 16); } else { markerSaya.setLatLng(window.lokasiSaya); } }); window.fokusLokasiSaya = function() { if (window.lokasiSaya) map.flyTo(window.lokasiSaya, 18, {animate: true}); };
+        window.cariRuteTerdekat = function() { if (!window.lokasiSaya) { alert("Mencari GPS..."); return; } var jarakTerpendek = Infinity; var odpTerdekat = null; window.dataODPGlobal.forEach(function(odp) { var jarak = window.lokasiSaya.distanceTo(L.latLng(odp.lat, odp.lng)); if (jarak < jarakTerpendek) { jarakTerpendek = jarak; odpTerdekat = odp; } }); if (odpTerdekat) { map.closePopup(); kunciTarget(odpTerdekat.lat, odpTerdekat.lng, odpTerdekat.nama); } }; window.kunciTarget = function(tujuanLat, tujuanLng, namaTujuan) { if (!window.lokasiSaya) { alert("GPS belum terkunci."); return; } map.closePopup(); targetAktif = L.latLng(tujuanLat, tujuanLng); if (routingControl) map.removeControl(routingControl); var jarakMeter = Math.round(window.lokasiSaya.distanceTo(targetAktif)); document.getElementById('info-jarak').innerText = jarakMeter > 1000 ? (jarakMeter/1000).toFixed(2) + " km" : jarakMeter + " m"; document.getElementById('nama-odp-tujuan').innerText = namaTujuan; routingControl = L.Routing.control({ waypoints: [ window.lokasiSaya, targetAktif ], createMarker: function() { return null; }, routeWhileDragging: false, addWaypoints: false, fitSelectedRoutes: true, show: false, lineOptions: { styles: [{color: '#0A66C2', opacity: 0.9, weight: 6}] } }).addTo(map); document.getElementById('panel-bawah').style.bottom = '0px'; document.getElementById('btn-tutup').style.display = 'flex'; }; window.tutupTarget = function() { document.getElementById('panel-bawah').style.bottom = '-300px'; document.getElementById('btn-tutup').style.display = 'none'; if (routingControl) map.removeControl(routingControl); targetAktif = null; map.flyTo(window.lokasiSaya, 16); }; window.bukaGoogleMapsAsli = function() { if (!targetAktif) return; window.open(`https://www.google.com/maps/dir/?api=1&origin=${window.lokasiSaya.lat},${window.lokasiSaya.lng}&destination=${targetAktif.lat},${targetAktif.lng}&travelmode=driving`, '_blank'); };
     </script>
 </body>
 </html>
