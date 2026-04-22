@@ -204,7 +204,6 @@
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
         // Inisialisasi Peta
         var map = L.map('map', {zoomControl: false, attributionControl: false}).setView([-5.3188, 105.1974], 15);
         L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
@@ -253,9 +252,15 @@ const app = initializeApp(firebaseConfig);
             });
         });
 
-        // 2. FUNGSI EKSTERNAL BUKA APLIKASI
-        window.bukaStreetView = function(lat, lng) { window.open(`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=$${lat},${lng}`, '_blank'); };
-        window.bukaGoogleMapsTitik = function(lat, lng) { window.open(`https://www.google.com/maps?q=$${lat},${lng}`, '_blank'); };
+        // 2. FUNGSI EKSTERNAL BUKA APLIKASI (SUDAH DIPERBAIKI)
+        window.bukaStreetView = function(lat, lng) { 
+            var urlStreetView = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+            window.open(urlStreetView, '_blank'); 
+        };
+        window.bukaGoogleMapsTitik = function(lat, lng) { 
+            var urlMaps = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+            window.open(urlMaps, '_blank'); 
+        };
 
         // 3. FUNGSI EDIT ODP
         window.modeEdit = false; window.idOdpEdit = null; window.fotoEditLama = "";
@@ -388,9 +393,21 @@ const app = initializeApp(firebaseConfig);
                 } 
             }
             else { 
-                // Mode Klik Bebas (Lihat Koordinat)
+                // Mode Klik Bebas (Lihat Koordinat & Fitur Buka Maps)
                 var lat = e.latlng.lat; var lng = e.latlng.lng; 
-                var kontenInfo = `<div style="text-align:center; min-width:140px;"><b style="font-size:14px;">Informasi Lokasi</b><p style="font-size:11px; color:#666; margin:4px 0 10px 0;">${lat.toFixed(5)}, ${lng.toFixed(5)}</p><div style="display:flex; gap:6px;"><button class="btn-action btn-streetview" style="flex:1; padding:6px; flex-direction:row; gap:4px;" onclick="bukaStreetView(${lat}, ${lng})"><span class="material-symbols-rounded" style="font-size:16px;">streetview</span><span class="btn-teks">Street</span></button><button class="btn-action btn-pandu" style="flex:1; padding:6px; flex-direction:row; gap:4px;" onclick="bukaGoogleMapsTitik(${lat}, ${lng})"><span class="material-symbols-rounded" style="font-size:16px;">map</span><span class="btn-teks">Maps</span></button></div></div>`; 
+                var kontenInfo = `
+                    <div style="text-align:center; min-width:140px;">
+                        <b style="font-size:14px;">Informasi Lokasi</b>
+                        <p style="font-size:11px; color:#666; margin:4px 0 10px 0;">${lat.toFixed(5)}, ${lng.toFixed(5)}</p>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn-action btn-streetview" style="flex:1; padding:6px; flex-direction:row; gap:4px;" onclick="bukaStreetView(${lat}, ${lng})">
+                                <span class="material-symbols-rounded" style="font-size:16px;">streetview</span><span class="btn-teks">Street</span>
+                            </button>
+                            <button class="btn-action btn-pandu" style="flex:1; padding:6px; flex-direction:row; gap:4px;" onclick="bukaGoogleMapsTitik(${lat}, ${lng})">
+                                <span class="material-symbols-rounded" style="font-size:16px;">map</span><span class="btn-teks">Maps</span>
+                            </button>
+                        </div>
+                    </div>`; 
                 L.popup().setLatLng(e.latlng).setContent(kontenInfo).openOn(map); 
             }
         });
@@ -415,7 +432,7 @@ const app = initializeApp(firebaseConfig);
             reader.readAsDataURL(file); 
         });
 
-        // 9. LOKASI PENGGUNA & RUTING NAVIGASI
+        // 9. LOKASI PENGGUNA & RUTING NAVIGASI (SUDAH DIPERBAIKI)
         window.lokasiSaya = null; var markerSaya = null; var targetAktif = null; var routingControl = null; 
         map.locate({setView: false, maxZoom: 18, watch: true, enableHighAccuracy: true}); 
         
@@ -461,8 +478,9 @@ const app = initializeApp(firebaseConfig);
         }; 
         
         window.bukaGoogleMapsAsli = function() { 
-            if (!targetAktif) return; 
-            window.open(`https://www.google.com/maps/dir/?api=1&origin=${window.lokasiSaya.lat},${window.lokasiSaya.lng}&destination=${targetAktif.lat},${targetAktif.lng}&travelmode=driving`, '_blank'); 
+            if (!targetAktif || !window.lokasiSaya) return; 
+            var urlRute = `https://www.google.com/maps/dir/?api=1&origin=${window.lokasiSaya.lat},${window.lokasiSaya.lng}&destination=${targetAktif.lat},${targetAktif.lng}&travelmode=driving`;
+            window.open(urlRute, '_blank'); 
         };
     </script>
 </body>
