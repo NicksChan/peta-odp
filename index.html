@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Peta ODP - Enterprise Edition</title>
+    <title>Peta ODP - Enterprise Edition + Label</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
@@ -13,7 +13,7 @@
     <style>
         :root {
             --primary: #0A66C2; --primary-hover: #004182; --success: #0D9488;
-            --danger: #E11D48; --warning: #F59E0B; --surface: #FFFFFF; 
+            --danger: #E11D48; --warning: #F59E0B; --streetview: #10B981; --surface: #FFFFFF; 
             --background: #F3F4F6; --text-main: #0F172A; --text-muted: #64748B; --border: #E2E8F0;
         }
         body { padding: 0; margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: var(--background); color: var(--text-main); }
@@ -43,22 +43,14 @@
         .detail-teks { font-size: 15px; color: var(--text-muted); margin-bottom: 24px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
         .btn-mulai { background: var(--primary); color: white; border: none; border-radius: 14px; padding: 16px; width: 100%; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; font-family: 'Inter', sans-serif; }
 
-        /* OVERLAY MODAL UMUM */
         #overlay-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 1999; opacity: 0; transition: opacity 0.3s; }
-        
-        /* MODAL TAMBAH ODP */
         #modal-tambah { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); padding: 24px; border-radius: 20px; z-index: 2000; width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto; opacity: 0; transition: all 0.3s ease; box-sizing: border-box; }
-        
-        /* MODAL GALERI BROSUR (Diperbaiki) */
         #modal-galeri { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); padding: 20px; border-radius: 20px; z-index: 2001; width: 92%; max-width: 500px; height: 85vh; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); overflow-y: auto; opacity: 0; transition: all 0.3s ease; box-sizing: border-box; }
-        
-        /* MODAL LIGHTBOX (Zoom Gambar) */
         #modal-lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.3s;}
         #modal-lightbox img { max-width: 95%; max-height: 80vh; object-fit: contain; border-radius: 8px;}
         .btn-tutup-lightbox { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer; display: flex;}
 
         .form-group { margin-bottom: 12px; text-align: left; }
-        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
         .form-input { width: 100%; padding: 12px 14px; box-sizing: border-box; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 14px; background: #F8FAFC; }
         .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
         .btn-modal { flex: 1; padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; border: none; }
@@ -69,34 +61,52 @@
         #input-foto, #input-brosur { display: none; }
         #preview-foto { display: none; width: 100%; height: 150px; object-fit: cover; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); }
 
-        /* UI GALERI BARU */
         .header-galeri { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
         .btn-tutup-galeri { background: #F1F5F9; border: none; padding: 6px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;}
-        
         .upload-brosur-area { background: #F3E8FF; border: 2px dashed #D8B4FE; color: #7E22CE; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; margin-bottom: 20px; font-weight: 600; display: block; transition: 0.2s;}
-        .upload-brosur-area:active { background: #E9D5FF; }
         
-        /* Grid yang diperbaiki: Pasti 2 kolom rata */
         .grid-brosur { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .kartu-brosur { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); position: relative; background: #f8fafc; cursor: pointer;}
         .kartu-brosur img { width: 100%; height: 130px; object-fit: cover; display: block;}
         .kartu-brosur .info { padding: 6px; font-size: 11px; color: var(--text-muted); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500;}
         .kartu-brosur .btn-hapus-brosur { position: absolute; top: 5px; right: 5px; background: rgba(225, 29, 72, 0.9); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;}
         
-        /* Map UI */
         .titik-biru { background-color: var(--primary); width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(10, 102, 194, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(10, 102, 194, 0); } 100% { box-shadow: 0 0 0 0 rgba(10, 102, 194, 0); } }
 
+        /* MODIFIKASI LABEL PERMANEN ODP */
+        .label-odp {
+            background-color: var(--surface);
+            border: 1px solid var(--primary);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+        /* Sembunyikan panah default bawaan Leaflet agar lebih rapi */
+        .leaflet-tooltip-top.label-odp::before, 
+        .leaflet-tooltip-bottom.label-odp::before, 
+        .leaflet-tooltip-left.label-odp::before, 
+        .leaflet-tooltip-right.label-odp::before {
+            display: none !important;
+        }
+
         .leaflet-routing-container { display: none !important; }
         .leaflet-popup-content-wrapper { border-radius: 16px !important; }
-        .leaflet-popup-content { width: 250px !important; font-family: 'Inter', sans-serif; }
+        .leaflet-popup-content { width: 260px !important; font-family: 'Inter', sans-serif; }
         .popup-title { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
         .popup-img { width: 100%; height: 130px; object-fit: cover; border-radius: 10px; margin: 8px 0; border: 1px solid var(--border); }
-        .action-grid { display: flex; gap: 6px; margin-top: 12px; }
+        
+        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; }
         .btn-action { padding: 8px; border-radius: 10px; font-weight: 600; color: white; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; }
-        .btn-pandu { background: var(--primary); flex: 2; }
-        .btn-pindah { background: var(--warning); flex: 1; }
-        .btn-hapus { background: var(--danger); flex: 1; }
+        .btn-pandu { background: var(--primary); }
+        .btn-streetview { background: var(--streetview); } 
+        .btn-pindah { background: var(--warning); }
+        .btn-hapus { background: var(--danger); }
     </style>
 </head>
 <body>
@@ -129,7 +139,7 @@
         </label>
         <input type="file" id="input-foto" accept="image/*" capture="environment">
         <img id="preview-foto" src="">
-        <div class="form-group"><input type="text" id="input-nama" class="form-input" placeholder="Nama ODP (Misal: ODP-A1.5)"></div>
+        <div class="form-group"><input type="text" id="input-nama" class="form-input" placeholder="Nama ODP (Misal: A1.1 / ODP-B2)"></div>
         <div class="form-group"><input type="text" id="input-alamat" class="form-input" placeholder="Patokan Alamat"></div>
         <div class="form-group"><textarea id="input-keterangan" class="form-input" placeholder="Keterangan fisik..." rows="2"></textarea></div>
         <div class="modal-btns">
@@ -149,7 +159,6 @@
             Ketuk untuk Upload Brosur
         </label>
         <input type="file" id="input-brosur" accept="image/*">
-
         <div class="grid-brosur" id="grid-brosur"></div>
     </div>
 
@@ -195,13 +204,43 @@ const app = initializeApp(firebaseConfig);
             window.dataODPGlobal = [];
             snapshot.forEach((dokument) => {
                 let odp = dokument.data(); odp.id = dokument.id; window.dataODPGlobal.push(odp); 
-                var kontenPopup = `<div><div class="popup-title">${odp.nama}</div>${odp.foto ? `<img src="${odp.foto}" class="popup-img">` : ''} ${odp.alamat ? `<p style="font-size:13px; margin:5px 0;">📍 ${odp.alamat}</p>` : ''} ${odp.keterangan ? `<p style="font-size:12px; margin:0; color:var(--text-muted);">📝 ${odp.keterangan}</p>` : ''} <div class="action-grid"><button class="btn-action btn-pandu" onclick='kunciTarget(${odp.lat}, ${odp.lng}, "${odp.nama}")'><span class="material-symbols-rounded" style="font-size:18px;">directions</span></button><button class="btn-action btn-pindah" onclick='mulaiPindahODP("${odp.id}", "${odp.nama}")'><span class="material-symbols-rounded" style="font-size:18px;">drag_pan</span></button><button class="btn-action btn-hapus" onclick='hapusODP("${odp.id}")'><span class="material-symbols-rounded" style="font-size:18px;">delete</span></button></div></div>`;
-                L.marker([odp.lat, odp.lng]).bindPopup(kontenPopup).addTo(markerLayer);
+                
+                var kontenPopup = `<div><div class="popup-title">${odp.nama}</div>${odp.foto ? `<img src="${odp.foto}" class="popup-img">` : ''} ${odp.alamat ? `<p style="font-size:13px; margin:5px 0;">📍 ${odp.alamat}</p>` : ''} ${odp.keterangan ? `<p style="font-size:12px; margin:0; color:var(--text-muted);">📝 ${odp.keterangan}</p>` : ''} 
+                <div class="action-grid">
+                    <button class="btn-action btn-pandu" onclick='kunciTarget(${odp.lat}, ${odp.lng}, "${odp.nama}")' title="Pandu Maps"><span class="material-symbols-rounded" style="font-size:18px;">directions</span></button>
+                    <button class="btn-action btn-streetview" onclick='bukaStreetView(${odp.lat}, ${odp.lng})' title="Lihat Street View"><span class="material-symbols-rounded" style="font-size:18px;">streetview</span></button>
+                    <button class="btn-action btn-pindah" onclick='mulaiPindahODP("${odp.id}", "${odp.nama}")' title="Pindah Titik"><span class="material-symbols-rounded" style="font-size:18px;">drag_pan</span></button>
+                    <button class="btn-action btn-hapus" onclick='hapusODP("${odp.id}")' title="Hapus"><span class="material-symbols-rounded" style="font-size:18px;">delete</span></button>
+                </div></div>`;
+                
+                // --- PENAMBAHAN LABEL PERMANEN DI SINI ---
+                L.marker([odp.lat, odp.lng])
+                 .bindPopup(kontenPopup)
+                 .bindTooltip(odp.nama, {
+                     permanent: true, 
+                     direction: 'bottom', 
+                     className: 'label-odp',
+                     offset: [0, 5], // Mengatur jarak agar tidak menabrak ikon pin
+                     opacity: 0.95
+                 })
+                 .addTo(markerLayer);
             });
         });
 
+        // BUKA STREET VIEW
+        window.bukaStreetView = function(lat, lng) {
+            var urlStreetView = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+            window.open(urlStreetView, '_blank');
+        };
+
+        // BUKA GOOGLE MAPS ASLI TITIK
+        window.bukaGoogleMapsTitik = function(lat, lng) {
+            var url = `https://www.google.com/maps?q=${lat},${lng}`;
+            window.open(url, '_blank');
+        };
+
         // ==========================================
-        // PERBAIKAN SISTEM BROSUR & KOMPRESI
+        // SISTEM BROSUR & KOMPRESI
         // ==========================================
         onSnapshot(collection(db, "data_brosur"), (snapshot) => {
             const grid = document.getElementById('grid-brosur');
@@ -230,30 +269,23 @@ const app = initializeApp(firebaseConfig);
                     var canvas = document.createElement('canvas'); 
                     var ctx = canvas.getContext('2d'); 
                     
-                    // KOMPRESI EKSTREM (Mencegah Limit 1MB Firebase)
-                    var MAX_WIDTH = 500; // Lebar gambar dibuat max 500px agar aman
+                    var MAX_WIDTH = 500; 
                     var scaleSize = MAX_WIDTH / img.width; 
-                    if (img.width > MAX_WIDTH) {
-                        canvas.width = MAX_WIDTH; 
-                        canvas.height = img.height * scaleSize; 
-                    } else {
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                    }
+                    if (img.width > MAX_WIDTH) { canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize; } 
+                    else { canvas.width = img.width; canvas.height = img.height; }
                     
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
-                    var base64Brosur = canvas.toDataURL('image/jpeg', 0.5); // Kualitas 50%
+                    var base64Brosur = canvas.toDataURL('image/jpeg', 0.5); 
 
-                    // Cek Ukuran Data
                     if(base64Brosur.length > 900000) {
-                        alert("Gagal: Foto masih terlalu berat! Coba cari foto yang lebih sederhana.");
+                        alert("Gagal: Foto masih terlalu berat!");
                         lbl.innerHTML = `<span class="material-symbols-rounded" style="font-size: 32px; display:block; margin-bottom:5px;">add_photo_alternate</span>Ketuk untuk Upload Brosur`;
                         return;
                     }
 
                     addDoc(collection(db, "data_brosur"), { foto: base64Brosur, namaFile: file.name, timestamp: new Date() }).then(() => {
                         document.getElementById('input-brosur').value = '';
-                        lbl.innerHTML = `<span class="material-symbols-rounded" style="font-size: 32px; display:block; margin-bottom:5px;">add_photo_alternate</span>Upload Berhasil! Ketuk Lagi`;
+                        lbl.innerHTML = `<span class="material-symbols-rounded" style="font-size: 32px; display:block; margin-bottom:5px;">add_photo_alternate</span>Upload Berhasil!`;
                         setTimeout(() => { lbl.innerHTML = `<span class="material-symbols-rounded" style="font-size: 32px; display:block; margin-bottom:5px;">add_photo_alternate</span>Ketuk untuk Upload Brosur`; }, 3000);
                     }).catch((error) => { alert("Error Database: " + error.message); });
                 }
@@ -263,27 +295,16 @@ const app = initializeApp(firebaseConfig);
         });
 
         window.hapusBrosur = async function(event, docId) {
-            event.stopPropagation(); // Agar gambar tidak ikut ke-zoom saat pencet hapus
+            event.stopPropagation(); 
             if(confirm("Hapus brosur ini secara permanen?")) { await deleteDoc(doc(db, "data_brosur", docId)); }
         };
 
         // --- SISTEM MODAL & LIGHTBOX ---
-        window.bukaLightbox = function(src, nama) {
-            document.getElementById('lightbox-img').src = src; document.getElementById('lightbox-nama').innerText = nama;
-            let lb = document.getElementById('modal-lightbox'); lb.style.display = 'flex'; setTimeout(() => { lb.style.opacity = '1'; }, 10);
-        };
-        window.tutupLightbox = function() {
-            let lb = document.getElementById('modal-lightbox'); lb.style.opacity = '0'; setTimeout(() => { lb.style.display = 'none'; }, 300);
-        };
-        
+        window.bukaLightbox = function(src, nama) { document.getElementById('lightbox-img').src = src; document.getElementById('lightbox-nama').innerText = nama; let lb = document.getElementById('modal-lightbox'); lb.style.display = 'flex'; setTimeout(() => { lb.style.opacity = '1'; }, 10); };
+        window.tutupLightbox = function() { let lb = document.getElementById('modal-lightbox'); lb.style.opacity = '0'; setTimeout(() => { lb.style.display = 'none'; }, 300); };
         window.bukaGaleri = function() { document.getElementById('overlay-modal').style.display = 'block'; document.getElementById('modal-galeri').style.display = 'block'; setTimeout(() => { document.getElementById('overlay-modal').style.opacity = '1'; document.getElementById('modal-galeri').style.opacity = '1'; }, 10); };
-        
-        window.tutupSemuaModal = function() {
-            document.getElementById('overlay-modal').style.opacity = '0'; document.getElementById('modal-tambah').style.opacity = '0'; document.getElementById('modal-galeri').style.opacity = '0';
-            setTimeout(() => { document.getElementById('overlay-modal').style.display = 'none'; document.getElementById('modal-tambah').style.display = 'none'; document.getElementById('modal-galeri').style.display = 'none'; document.getElementById('input-nama').value = ''; document.getElementById('input-alamat').value = ''; document.getElementById('input-keterangan').value = ''; document.getElementById('input-foto').value = ''; document.getElementById('preview-foto').style.display = 'none'; window.fotoBase64Temp = ""; batalkanAksi(); }, 300);
-        };
+        window.tutupSemuaModal = function() { document.getElementById('overlay-modal').style.opacity = '0'; document.getElementById('modal-tambah').style.opacity = '0'; document.getElementById('modal-galeri').style.opacity = '0'; setTimeout(() => { document.getElementById('overlay-modal').style.display = 'none'; document.getElementById('modal-tambah').style.display = 'none'; document.getElementById('modal-galeri').style.display = 'none'; document.getElementById('input-nama').value = ''; document.getElementById('input-alamat').value = ''; document.getElementById('input-keterangan').value = ''; document.getElementById('input-foto').value = ''; document.getElementById('preview-foto').style.display = 'none'; window.fotoBase64Temp = ""; batalkanAksi(); }, 300); };
 
-        // --- FUNGSI ODP LAINNYA ---
         window.simpanKeCloud = async function() { var nama = document.getElementById('input-nama').value; var alamat = document.getElementById('input-alamat').value; var keterangan = document.getElementById('input-keterangan').value; var btnSimpan = document.getElementById('btn-simpan-db'); if (!nama) { alert("Nama wajib diisi!"); return; } btnSimpan.innerText = "Menyimpan..."; btnSimpan.style.opacity = "0.7"; try { await addDoc(collection(db, "data_odp"), { nama: nama, alamat: alamat, keterangan: keterangan, lat: window.lokasiTemp.lat, lng: window.lokasiTemp.lng, foto: window.fotoBase64Temp || "" }); tutupSemuaModal(); } catch (e) { alert("Gagal!"); } finally { btnSimpan.innerText = "Simpan"; btnSimpan.style.opacity = "1"; } };
         window.hapusODP = async function(docId) { if(confirm("Hapus ODP permanen?")) { await deleteDoc(doc(db, "data_odp", docId)); } };
         window.modePindah = false; window.idOdpPindah = null; window.mulaiPindahODP = function(docId, namaOdp) { map.closePopup(); window.modePindah = true; window.idOdpPindah = docId; document.getElementById('map').style.cursor = 'crosshair'; tampilBanner(`Pindah <b>${namaOdp}</b>`, 'touch_app'); }; window.prosesPindahODP = async function(latlng) { if(confirm("Pindahkan ke titik ini?")) { tampilBanner("Memindahkan...", "sync"); await updateDoc(doc(db, "data_odp", window.idOdpPindah), { lat: latlng.lat, lng: latlng.lng }); batalkanAksi(); } };
@@ -291,7 +312,30 @@ const app = initializeApp(firebaseConfig);
         window.modeTambah = false; window.modeUkur = false; var layerUkur = L.featureGroup().addTo(map); var titikUkurArr = []; var totalJarak = 0;
         window.toggleModeTambah = function() { batalkanAksi(); window.modeTambah = true; document.getElementById('btn-tambah').classList.add('active-btn'); document.getElementById('map').style.cursor = 'crosshair'; tampilBanner("Ketuk lokasi ODP", "add_location_alt"); }; window.toggleModeUkur = function() { if(window.modeUkur) { batalkanAksi(); return; } batalkanAksi(); window.modeUkur = true; document.getElementById('btn-ukur').classList.add('active-btn'); document.getElementById('map').style.cursor = 'crosshair'; tampilBanner("Jarak: 0m", "straighten"); };
 
-        map.on('click', function(e) { if (window.modeTambah) { window.lokasiTemp = e.latlng; document.getElementById('overlay-modal').style.display = 'block'; document.getElementById('modal-tambah').style.display = 'block'; setTimeout(() => { document.getElementById('overlay-modal').style.opacity = '1'; document.getElementById('modal-tambah').style.opacity = '1'; }, 10); } else if (window.modePindah) { prosesPindahODP(e.latlng); } else if (window.modeUkur) { titikUkurArr.push(e.latlng); L.circleMarker(e.latlng, {color: '#E11D48', radius: 5, fillOpacity: 1}).addTo(layerUkur); if(titikUkurArr.length > 1) { L.polyline(titikUkurArr, {color: '#0A66C2', weight: 4, dashArray: '8,8'}).addTo(layerUkur); let pSebelum = titikUkurArr[titikUkurArr.length - 2]; totalJarak += pSebelum.distanceTo(e.latlng); let teks = totalJarak > 1000 ? (totalJarak/1000).toFixed(2) + " km" : Math.round(totalJarak) + " m"; document.getElementById('status-text').innerHTML = `Total Jarak: <b>${teks}</b>`; } } });
+        map.on('click', function(e) { 
+            if (window.modeTambah) { 
+                window.lokasiTemp = e.latlng; document.getElementById('overlay-modal').style.display = 'block'; document.getElementById('modal-tambah').style.display = 'block'; setTimeout(() => { document.getElementById('overlay-modal').style.opacity = '1'; document.getElementById('modal-tambah').style.opacity = '1'; }, 10); 
+            } 
+            else if (window.modePindah) { 
+                prosesPindahODP(e.latlng); 
+            } 
+            else if (window.modeUkur) { 
+                titikUkurArr.push(e.latlng); L.circleMarker(e.latlng, {color: '#E11D48', radius: 5, fillOpacity: 1}).addTo(layerUkur); if(titikUkurArr.length > 1) { L.polyline(titikUkurArr, {color: '#0A66C2', weight: 4, dashArray: '8,8'}).addTo(layerUkur); let pSebelum = titikUkurArr[titikUkurArr.length - 2]; totalJarak += pSebelum.distanceTo(e.latlng); let teks = totalJarak > 1000 ? (totalJarak/1000).toFixed(2) + " km" : Math.round(totalJarak) + " m"; document.getElementById('status-text').innerHTML = `Total Jarak: <b>${teks}</b>`; } 
+            }
+            else {
+                var lat = e.latlng.lat; var lng = e.latlng.lng;
+                var kontenInfo = `
+                    <div style="text-align:center; min-width:140px;">
+                        <b style="font-size:14px;">Informasi Lokasi</b>
+                        <p style="font-size:11px; color:#666; margin:4px 0 10px 0;">${lat.toFixed(5)}, ${lng.toFixed(5)}</p>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn-action btn-streetview" style="flex:1; padding:6px;" onclick="bukaStreetView(${lat}, ${lng})" title="Street View"><span class="material-symbols-rounded" style="font-size:18px;">streetview</span></button>
+                            <button class="btn-action btn-pandu" style="flex:1; padding:6px;" onclick="bukaGoogleMapsTitik(${lat}, ${lng})" title="Buka di Maps App"><span class="material-symbols-rounded" style="font-size:18px;">map</span></button>
+                        </div>
+                    </div>`;
+                L.popup().setLatLng(e.latlng).setContent(kontenInfo).openOn(map);
+            }
+        });
 
         window.tampilBanner = function(teks, icon) { document.getElementById('status-text').innerHTML = teks; document.getElementById('status-icon').innerText = icon; document.getElementById('status-banner').style.display = 'flex'; }; window.batalkanAksi = function() { window.modeTambah = false; window.modePindah = false; window.modeUkur = false; window.idOdpPindah = null; document.getElementById('map').style.cursor = ''; document.getElementById('status-banner').style.display = 'none'; document.getElementById('btn-tambah').classList.remove('active-btn'); document.getElementById('btn-ukur').classList.remove('active-btn'); layerUkur.clearLayers(); titikUkurArr = []; totalJarak = 0; };
         
