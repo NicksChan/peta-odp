@@ -3,95 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Pemetaan ODP Real-time</title>
+    <title>Peta ODP Satelit</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
     
     <style>
         body { padding: 0; margin: 0; }
-        /* Membuat peta memenuhi layar HP */
         #map { height: 100vh; width: 100vw; }
+        
+        /* Tombol kustom untuk mengulang pencarian GPS */
+        .tombol-gps {
+            position: absolute; top: 10px; right: 10px; z-index: 999;
+            background: white; padding: 10px; border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-weight: bold; cursor: pointer; border: 2px solid #007bff;
+        }
     </style>
 </head>
 <body>
 
+    <button class="tombol-gps" onclick="cariLokasi()">📍 Lacak Posisi Saya</button>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
     <script>
-        // 1. INISIALISASI PETA (Set awal di sekitar Natar, Lampung)
+        // 1. INISIALISASI PETA (Set awal di sekitar Natar)
         var map = L.map('map').setView([-5.3188, 105.1974], 15);
 
-        // 2. LOAD PETA DARI OPENSTREETMAP (100% Gratis)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+        // 2. LOAD PETA SATELIT (Hybrid - Satelit + Nama Jalan) - 100% GRATIS
+        L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            attribution: '© Google Maps'
         }).addTo(map);
 
-        // 3. TAMBAHKAN TITIK ODP (Ganti koordinat ini sesuai titik asli di lapangan)
-        // Format: [Latitude, Longitude]
+        // 3. TAMBAHKAN TITIK ODP (Ganti koordinat ini sesuai titik asli)
         var dataODP = [
             { nama: "ODP A1.1 (Jl. Sitara)", lat: -5.3188, lng: 105.1974 },
             { nama: "ODP C1.2 (Jl. Padat Karya)", lat: -5.3150, lng: 105.1950 },
             { nama: "ODP F2.1 (Bharata Music)", lat: -5.3210, lng: 105.2010 }
         ];
 
-        // Looping untuk memunculkan semua ODP di peta
+        // Looping untuk memunculkan marker ODP
         var odpMarkers = [];
         dataODP.forEach(function(odp) {
             var marker = L.marker([odp.lat, odp.lng]).addTo(map)
-                .bindPopup("<b>" + odp.nama + "</b><br><button onclick='buatRute(" + odp.lat + ", " + odp.lng + ")'>Arahkan ke Sini</button>");
+                .bindPopup("<b>" + odp.nama + "</b><br><button style='margin-top:5px; padding:5px; background:#007bff; color:white; border:none; border-radius:3px;' onclick='buatRute(" + odp.lat + ", " + odp.lng + ")'>Arahkan ke Sini</button>");
             odpMarkers.push(marker);
         });
 
-        // 4. DETEKSI LOKASI GPS REAL-TIME (LOKASI HP ANDA)
+        // 4. SISTEM GPS REAL-TIME
         var lokasiSaya = null;
         var markerSaya = null;
         var kontrolRute = null;
 
-        // Minta izin GPS ke HP dan pantau pergerakan
-        map.locate({setView: true, maxZoom: 16, watch: true, enableHighAccuracy: true});
+        // Fungsi mencari lokasi (Bisa dipanggil ulang pakai tombol)
+        window.cariLokasi = function() {
+            map.locate({setView: true, maxZoom: 17, watch: true, enableHighAccuracy: true});
+        };
 
+        // Otomatis cari lokasi saat web dibuka
+        cariLokasi();
+
+        // Jika GPS Berhasil Ditemukan
         map.on('locationfound', function(e) {
             lokasiSaya = e.latlng;
             
-            // Jika marker lokasi kita belum ada, buat baru. Jika sudah ada, geser posisinya.
+            // Ikon kustom untuk posisi teknisi (lingkaran biru)
+            var myIcon = L.divIcon({
+                className: 'my-div-icon',
+                html: '<div style="background-color: blue; width: 15px; height: 15px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+
             if (!markerSaya) {
-                markerSaya = L.marker(lokasiSaya).addTo(map).bindPopup("Lokasi Anda").openPopup();
+                markerSaya = L.marker(lokasiSaya, {icon: myIcon}).addTo(map).bindPopup("Posisi Anda").openPopup();
             } else {
                 markerSaya.setLatLng(lokasiSaya);
             }
         });
 
+        // Jika GPS Gagal Ditemukan
         map.on('locationerror', function(e) {
-            alert("Gagal mendeteksi lokasi GPS Anda: " + e.message);
+            alert("Pencarian lokasi gagal.\n\n1. Pastikan fitur GPS/Lokasi di HP Anda MENYALA.\n2. Pastikan Anda mengizinkan (Allow) browser untuk mengakses lokasi.\n3. Jangan gunakan Laptop/PC, gunakan HP untuk hasil akurat.");
         });
 
-        // 5. FUNGSI UNTUK MEMBUAT RUTE (NAVIGASI)
-        // Fungsi ini dipanggil saat tombol "Arahkan ke Sini" pada ODP diklik
+        // 5. FUNGSI UNTUK MEMBUAT RUTE
         window.buatRute = function(tujuanLat, tujuanLng) {
             if (!lokasiSaya) {
-                alert("Tunggu sebentar, sedang mencari lokasi GPS Anda...");
+                alert("Sistem belum mendeteksi lokasi Anda. Pastikan GPS menyala dan klik 'Izinkan' pada browser, lalu klik tombol 'Lacak Posisi Saya' di pojok kanan atas.");
                 return;
             }
 
-            // Hapus rute lama jika ada
             if (kontrolRute) {
                 map.removeControl(kontrolRute);
             }
 
-            // Buat rute baru dari lokasi Anda ke ODP yang dipilih
             kontrolRute = L.Routing.control({
                 waypoints: [
-                    L.latLng(lokasiSaya.lat, lokasiSaya.lng), // Titik A (Anda)
-                    L.latLng(tujuanLat, tujuanLng)            // Titik B (ODP)
+                    L.latLng(lokasiSaya.lat, lokasiSaya.lng),
+                    L.latLng(tujuanLat, tujuanLng)
                 ],
                 routeWhileDragging: false,
-                addWaypoints: false, // Matikan fitur tambah titik tengah agar rapi di HP
-                language: 'id'
+                addWaypoints: false,
+                language: 'id',
+                lineOptions: {
+                    styles: [{color: '#00BFFF', opacity: 0.8, weight: 6}] // Warna garis rute biru terang agar terlihat di peta satelit
+                }
             }).addTo(map);
         };
     </script>
