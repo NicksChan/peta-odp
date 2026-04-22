@@ -243,7 +243,7 @@ const app = initializeApp(firebaseConfig);
                 // Tampilan Popup & Tombol Aksi (Dengan teks di bawah Ikon)
                 var kontenPopup = `<div>
                     <div class="popup-title">${odp.nama}</div>
-                    ${odp.foto ? `<img src="${odp.foto}" class="popup-img">` : ''} 
+                    ${odp.foto ? `<img src="${odp.foto}" class="popup-img" onclick="bukaLightbox('${odp.foto}', '${odp.nama}')" style="cursor:pointer;" title="Ketuk untuk memperbesar">` : ''} 
                     ${odp.alamat ? `<p style="font-size:13px; margin:5px 0;">📍 ${odp.alamat}</p>` : ''} 
                     ${odp.keterangan ? `<p style="font-size:12px; margin:0; color:var(--text-muted);">📝 ${odp.keterangan}</p>` : ''} 
                 <div class="action-grid">
